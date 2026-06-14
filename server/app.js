@@ -3,7 +3,7 @@ const app = express();
 const mongoose = require("mongoose");
 const User = require("./models/user");
 const ejsMate = require("ejs-mate");
-
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 
@@ -53,7 +53,38 @@ app.post("/auth/api/signup",async (req,res)=>{
 
 
 })
+app.post("/auth/api/login", async (req,res)=>{
+    const {email , password} = req.body;
+    if(!email || !password){
+        res.send({
+            message:"Email and Password are required field",
+            success:false
+        });
+    }
+    
+    const user = await User.findOne({email});
+    if(!user){
+        res.send({
+            message:"User does not exists",
+            success:false
+        });
+    }
+    const match = await bcrypt.compare(password, user.password);
+    if(!match){
+        res.send({
+            message : "Invalid Data",
+            success : false
+        })
+    }
+    const token = jwt.sign({userId:user._id},process.env.SECRET,{expiresIn:"1d"});
+    res.send({
+        message:"User is logged In",
+        success : true
+    })
 
+
+
+})
 
 
 
