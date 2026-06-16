@@ -6,7 +6,7 @@ const ejsMate = require("ejs-mate");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-
+const authMiddleware = require("./middleware/authMiddleware");
 
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
@@ -30,7 +30,7 @@ app.post("/auth/api/signup",async (req,res)=>{
         const {email , firstname , lastname, password} = req.body ;
         const user = await User.findOne({email});
         if(user){
-            return res.send({
+            return res.status(400).send({
                 message:"User already exists",
                 sucess : false
             })
@@ -39,12 +39,12 @@ app.post("/auth/api/signup",async (req,res)=>{
         const hashedPass = bcrypt.hashSync(password, 10);
         const newUser = new User({email,firstname,lastname,password:hashedPass});
         await newUser.save();
-        res.send({
+        res.status(201).send({
                 message:"User added",
                 sucess : true
             });
     }catch(err){
-        res.send({
+        res.status(400).send({
             message:err.message,
             success:false
         })
@@ -56,7 +56,7 @@ app.post("/auth/api/signup",async (req,res)=>{
 app.post("/auth/api/login", async (req,res)=>{
     const {email , password} = req.body;
     if(!email || !password){
-        res.send({
+        return res.send({
             message:"Email and Password are required field",
             success:false
         });
@@ -64,14 +64,14 @@ app.post("/auth/api/login", async (req,res)=>{
     
     const user = await User.findOne({email});
     if(!user){
-        res.send({
+        return res.status(400).send({
             message:"User does not exists",
             success:false
         });
     }
     const match = await bcrypt.compare(password, user.password);
     if(!match){
-        res.send({
+        return res.status(400).send({
             message : "Invalid Data",
             success : false
         })
@@ -79,11 +79,46 @@ app.post("/auth/api/login", async (req,res)=>{
     const token = jwt.sign({userId:user._id},process.env.SECRET,{expiresIn:"1d"});
     res.send({
         message:"User is logged In",
-        success : true
+        success : true,
+        token
     })
 
 
 
+})
+
+app.get("/user/api/get-logged-in-user", authMiddleware, async (req,res)=>{
+
+    try{
+        const user = await User.findOne({_id:req.userId});
+        res.send(user);
+
+
+    }catch(err){
+        res.status(400).send({
+                message:err.message,
+                success:false
+            })
+    }
+})
+
+app.get("/user/api/get-all-users", authMiddleware , async (req,res) => {
+    try{
+
+        const users = await User.find({_id:{$ne:req.userId}});
+        return res.send({
+            message:"fetched all users",
+            data:users,
+            success:true
+        });
+
+    }catch(err){
+        res.status(400).send({
+            message:err.message,
+            success:false
+        })
+
+    }
 })
 
 
