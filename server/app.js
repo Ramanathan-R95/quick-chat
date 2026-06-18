@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 const authMiddleware = require("./middleware/authMiddleware");
-
+const Chat = require("./models/chat");
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 
@@ -25,7 +25,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 
 
-app.post("/auth/api/signup",async (req,res)=>{
+app.post("/api/auth/signup",async (req,res)=>{
     try{
         const {email , firstname , lastname, password} = req.body ;
         const user = await User.findOne({email});
@@ -53,7 +53,7 @@ app.post("/auth/api/signup",async (req,res)=>{
 
 
 })
-app.post("/auth/api/login", async (req,res)=>{
+app.post("/api/auth/login", async (req,res)=>{
     const {email , password} = req.body;
     if(!email || !password){
         return res.send({
@@ -69,6 +69,8 @@ app.post("/auth/api/login", async (req,res)=>{
             success:false
         });
     }
+
+  
     const match = await bcrypt.compare(password, user.password);
     if(!match){
         return res.status(400).send({
@@ -76,7 +78,7 @@ app.post("/auth/api/login", async (req,res)=>{
             success : false
         })
     }
-    const token = jwt.sign({userId:user._id},process.env.SECRET,{expiresIn:"1d"});
+    const token = jwt.sign({userId:user._id},process.env.SECRET,{expiresIn:"20d"});
     res.send({
         message:"User is logged In",
         success : true,
@@ -87,7 +89,7 @@ app.post("/auth/api/login", async (req,res)=>{
 
 })
 
-app.get("/user/api/get-logged-in-user", authMiddleware, async (req,res)=>{
+app.get("/api/user/get-logged-in-user", authMiddleware, async (req,res)=>{
 
     try{
         const user = await User.findOne({_id:req.userId});
@@ -102,7 +104,7 @@ app.get("/user/api/get-logged-in-user", authMiddleware, async (req,res)=>{
     }
 })
 
-app.get("/user/api/get-all-users", authMiddleware , async (req,res) => {
+app.get("/api/user/get-all-users", authMiddleware , async (req,res) => {
     try{
 
         const users = await User.find({_id:{$ne:req.userId}});
@@ -119,6 +121,48 @@ app.get("/user/api/get-all-users", authMiddleware , async (req,res) => {
         })
 
     }
+});
+
+app.post("/api/chat/new-chat",authMiddleware, async (req,res)=>{
+    try{
+        
+        const chat = new Chat(req.body);
+        await chat.save();
+        return res.status(201).send({
+            message:"Chat created successfully",
+            success:true,
+            data:chat
+        });
+
+    }catch(err){
+        res.status(400).send({
+            message:err.message,
+            success:false
+        })
+    }
+
+})
+
+app.get("/api/chat/all-chats",authMiddleware,async (req,res)=>{
+    try{
+        const chats = await Chat.find({members:{$in:req.userId}});
+        res.status(200).send({
+            message:"All chats retrieved",
+            success:true,
+            data:chats
+
+        });
+
+
+    }catch(err){
+        res.status(400).send({
+            message:err.message,
+            success:false
+        })
+
+    }
+
+
 })
 
 
