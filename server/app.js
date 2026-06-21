@@ -8,6 +8,7 @@ const bcrypt = require("bcrypt");
 
 const authMiddleware = require("./middleware/authMiddleware");
 const Chat = require("./models/chat");
+const Message = require("./models/message");
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 
@@ -164,6 +165,51 @@ app.get("/api/chat/all-chats",authMiddleware,async (req,res)=>{
 
 
 })
+
+
+
+app.post("/api/msg/new-msg",authMiddleware,async (req,res)=>{
+    try{
+        const msg = new  Message(req.body);
+        await msg.save();
+        await Chat.findByIdAndUpdate(msg.chatId,{
+            lastMessage:msg._id,
+            $inc:{unreadMsgCount:1}
+        })
+
+        res.status(201).send({
+            message:"Message sent successfully",
+            success:true,
+            data:msg
+        });
+
+
+    }catch(err){
+        res.status(400).send({
+            message:err.message,
+            success:false
+        })
+    }
+});
+
+app.get("/api/msg/all-msgs/:chatId",authMiddleware,async (req,res)=>{
+    try{     
+        const msgs = await Message.find({chatId:req.params.chatId}).sort({createdAt:1});
+        res.status(200).send({
+            message:"Fetched all messages",
+            success:true,
+            data:msgs
+        });
+    }catch(err){
+        res.status(400).send({
+            message:err.message,
+            success:false
+        });
+    }
+
+
+
+});
 
 
 
