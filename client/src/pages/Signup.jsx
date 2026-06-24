@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { signUp } from "../apiCalls/auth";
+import {toast} from 'react-hot-toast';
+
 function Signup() {
   const [formData, setFormData] = useState({
     firstname: "",
@@ -22,10 +24,10 @@ function Signup() {
 
     try{
       const res = await signUp(formData);
-      alert(res.message);
+      toast.success(res.message);
 
     }catch(err){
-      alert(err.message);
+      toast.error(err.message);
 
     }
 

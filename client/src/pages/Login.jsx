@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logIn } from "../apiCalls/auth";
-
+import {toast} from 'react-hot-toast';
 function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -25,10 +25,10 @@ function Login() {
       if (res.token) {
         localStorage.setItem("token", res.token);
       }
-      alert(res.message);
+      toast.success(res.message);
       navigate("/");
     }catch(err){
-      alert(err.message);
+      toast.error(err.message);
 
     }
 
