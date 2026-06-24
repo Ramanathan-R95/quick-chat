@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { logIn } from "../apiCalls/auth";
+
 function Login() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -19,7 +22,11 @@ function Login() {
     e.preventDefault();
     try{
       const res = await logIn(formData);
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+      }
       alert(res.message);
+      navigate("/");
     }catch(err){
       alert(err.message);
 
